@@ -6,6 +6,8 @@
 // @match        https://github.com/notifications*
 // @grant        none
 // @inject-into  content
+// @updateURL   https://github.com/chancez/userscripts/raw/refs/heads/main/github-notification-inbox-toggle.user.js
+// @downloadURL https://github.com/chancez/userscripts/raw/refs/heads/main/github-notification-inbox-toggle.user.js
 // ==/UserScript==
 
 (function() {

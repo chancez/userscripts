@@ -61,7 +61,7 @@
         const items = document.querySelectorAll('.js-navigation-container li');
         items.forEach(item => {
             const isVisible = getComputedStyle(item).display !== 'none';
-            const isDone = item.querySelector('svg.color-fg-done') || item.querySelector('svg.color-fg-danger');
+            const isDone = item.querySelector('svg.color-fg-done') || item.querySelector('svg.color-fg-danger') || item.querySelector('svg.color-fg-muted');
             const shouldShow = showDoneOnly ? isDone : !isHidden || !isDone;
             if (isVisible && !shouldShow) {
                 item.style.display = 'none'; // Hide if it shouldn't be displayed

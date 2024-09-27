@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Notification Inbox Toggle
 // @namespace    http://tampermonkey.net/
-// @version      1.16
+// @version      1.17
 // @description  Toggle hiding or showing done notifications in GitHub inbox
 // @match        https://github.com/notifications*
 // @grant        none
@@ -60,9 +60,14 @@
     function updateVisibleNotifications() {
         const items = document.querySelectorAll('.js-navigation-container li');
         items.forEach(item => {
+            const isVisible = getComputedStyle(item).display !== 'none';
             const isDone = item.querySelector('svg.color-fg-done') || item.querySelector('svg.color-fg-danger');
             const shouldShow = showDoneOnly ? isDone : !isHidden || !isDone;
-            item.style.display = shouldShow ? '' : 'none';
+            if (isVisible && !shouldShow) {
+                item.style.display = 'none'; // Hide if it shouldn't be displayed
+            } else if (!isVisible && shouldShow) {
+                item.style.display = ''; // Show if it isnt' visible but should be
+            }
         });
 
         updateButtonState(toggleVisibilityButton, isHidden);
@@ -79,17 +84,7 @@
 
     // Observe for changes in the notification list
     const observer = new MutationObserver(() => {
-        const items = document.querySelectorAll('.js-navigation-container li');
-        items.forEach(item => {
-            const isVisible = getComputedStyle(item).display !== 'none';
-            if (isVisible) {
-                const isDone = item.querySelector('svg.color-fg-done') || item.querySelector('svg.color-fg-danger');
-                const shouldShow = showDoneOnly ? isDone : !isHidden || !isDone;
-                if (!shouldShow) {
-                    item.style.display = 'none'; // Hide if it shouldn't be displayed
-                }
-            }
-        });
+        updateVisibleNotifications();
     });
 
     const targetNode = document.querySelector('.js-navigation-container');

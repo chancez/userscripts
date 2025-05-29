@@ -1,11 +1,10 @@
 // ==UserScript==
 // @name         GitHub Notification Inbox Toggle
 // @namespace    http://tampermonkey.net/
-// @version      1.17
+// @version      1.18
 // @description  Toggle hiding or showing done notifications in GitHub inbox
 // @match        https://github.com/notifications*
 // @grant        none
-// @inject-into  content
 // @updateURL   https://github.com/chancez/userscripts/raw/refs/heads/main/github-notification-inbox-toggle.user.js
 // @downloadURL https://github.com/chancez/userscripts/raw/refs/heads/main/github-notification-inbox-toggle.user.js
 // ==/UserScript==
@@ -23,6 +22,7 @@
         'svg.octicon-x',
         'svg.octicon-stop',
         'svg.octicon-rocket',
+        'svg.octicon-check',
     ];
 
     const createButton = (text, positionY) => {
@@ -66,10 +66,10 @@
     }
 
     function updateVisibleNotifications() {
-        const items = document.querySelectorAll('.js-navigation-container li');
+        const items = document.querySelectorAll('.js-navigation-container li.notifications-list-item');
         items.forEach(item => {
             const isVisible = getComputedStyle(item).display !== 'none';
-            const isDone = item.querySelector(doneSelectors);
+            const isDone = item.querySelector(':not(.notification-list-item)').querySelector(doneSelectors);
             const shouldShow = showDoneOnly ? isDone : !isHidden || !isDone;
             if (isVisible && !shouldShow) {
                 item.style.display = 'none'; // Hide if it shouldn't be displayed

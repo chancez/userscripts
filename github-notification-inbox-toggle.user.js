@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Notification Inbox Toggle
 // @namespace    http://tampermonkey.net/
-// @version      1.19
+// @version      1.20
 // @description  Toggle hiding or showing done notifications in GitHub inbox
 // @match        https://github.com/notifications*
 // @grant        none
@@ -37,6 +37,11 @@
     return getComputedStyle(item).display !== 'none';
   };
 
+  const toggleItemCheckBox = (item) => {
+    const checkBox = item.querySelector('input[type="checkbox"]');
+    checkBox.click();
+  };
+
   const checkItemCheckBox = (item) => {
     const checkBox = item.querySelector('input[type="checkbox"]');
     if (!checkBox.checked) {
@@ -44,19 +49,24 @@
     }
   };
 
-  const createButton = (text, positionY, handler) => {
+  const clickDoneButton = () => {
+    document.querySelector('.notifications-list .js-notification-action.js-notification-bulk-action form[data-status="archived"] button[type="submit"]').click();
+  }
+
+  const createButton = (text, handler) => {
+    // Add buttons to the overlay
     const button = document.createElement('button');
     button.textContent = text;
-    button.style.position = 'fixed';
-    button.style.left = '50%';
-    button.style.transform = 'translateX(-50%)';
-    button.style.zIndex = '1000';
-    button.style.padding = '5px 10px';
+    // button.style.width = '120px'
+    button.style.height = '50px'
+    button.style.alignItems = 'center';
+    button.style.display = 'flex';
+    button.style.flex = '1 1 80px';
+    button.style.padding = '5px 5px';
     button.style.border = '1px solid #ccc';
     button.style.borderRadius = '4px';
     button.style.cursor = 'pointer';
     button.style.transition = 'background-color 0.3s, color 0.3s';
-    button.style.top = `${positionY}px`;
     button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
     button.style.color = '#333';
     button.addEventListener('click', (event) => {
@@ -68,19 +78,64 @@
     return button;
   };
 
-  const toggleVisibilityButton = createButton('Toggle Hidden Notifications', 10, (event) => {
+  const createOverlay = (elems) => {
+    const overlay = document.createElement('div');
+    const overlayContent = document.createElement('div')
+    overlay.appendChild(overlayContent)
+    for (let elem of elems) {
+      overlayContent.appendChild(elem)
+    }
+
+    overlay.id = 'inbox-button-overlay'
+    overlay.style.position = 'fixed';
+    overlay.style.left = '50%';
+    overlay.style.transform = 'translateX(-50%)';
+    overlay.style.zIndex = '1000';
+    overlay.style.top = '10px';
+    overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+    overlay.style.width = '400px';
+    overlay.style.height = '80px';
+    overlay.style.display = 'flex';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    overlay.style.border = '2px solid #CCCCCC';
+    overlay.style.padding = '5px';
+
+    overlayContent.id = 'inbox-button-overlay-content'
+    overlayContent.style.display = 'flex';
+    overlayContent.style.flexWrap = 'wrap';
+    overlayContent.style.justifyContent = 'center';
+    overlayContent.style.alignItems = 'center';
+    overlayContent.style.gap = '10px';
+
+    return overlay;
+  };
+
+  const toggleVisibilityButton = createButton('Toggle Hidden', () => {
     isHidden = !isHidden;
     showDoneOnly = false;
     saveFilterState();
     updateVisibleNotifications();
   });
-  const toggleShowDoneButton = createButton('Show Only Done Notifications', 50, (event) => {
+
+  const toggleShowDoneButton = createButton('Show Only Done', () => {
     showDoneOnly = !showDoneOnly;
     isHidden = false;
     saveFilterState();
     updateVisibleNotifications();
   });
-  const selectDone = createButton('Select Done Notifications', 90, (event) => {
+
+  const selectDone = createButton('Toggle Mark Done', () => {
+    const items = getNotificationItems();
+    items.forEach(item => {
+      const isDone = itemIsDone(item);
+      if (isDone) {
+        toggleItemCheckBox(item);
+      }
+    })
+  });
+
+  const markDone = createButton('Clear Done', () => {
     const items = getNotificationItems();
     items.forEach(item => {
       const isDone = itemIsDone(item);
@@ -88,10 +143,18 @@
         checkItemCheckBox(item);
       }
     })
+    clickDoneButton();
   });
-  document.body.appendChild(toggleVisibilityButton);
-  document.body.appendChild(toggleShowDoneButton);
-  document.body.appendChild(selectDone);
+
+  const buttons = [
+    toggleVisibilityButton,
+    toggleShowDoneButton,
+    selectDone,
+    markDone,
+  ];
+
+  const overlay = createOverlay(buttons)
+  document.body.appendChild(overlay);
 
   function updateButtonState(button, isActive) {
     button.style.backgroundColor = isActive ? '#4caf50' : 'rgba(255, 255, 255, 0.9)';

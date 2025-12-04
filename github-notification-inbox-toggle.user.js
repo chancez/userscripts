@@ -111,7 +111,7 @@
     return overlay;
   };
 
-  const toggleVisibilityButton = createButton('Toggle Hidden', () => {
+  const toggleHideDoneButton = createButton('Hide Done', () => {
     isHidden = !isHidden;
     showDoneOnly = false;
     saveFilterState();
@@ -125,7 +125,7 @@
     updateVisibleNotifications();
   });
 
-  const selectDone = createButton('Toggle Mark Done', () => {
+  const selectDoneButton = createButton('Mark Done', () => {
     const items = getNotificationItems();
     items.forEach(item => {
       const isDone = itemIsDone(item);
@@ -135,7 +135,7 @@
     })
   });
 
-  const markDone = createButton('Clear Done', () => {
+  const clearDoneButton = createButton('Clear Done', () => {
     const items = getNotificationItems();
     items.forEach(item => {
       const isDone = itemIsDone(item);
@@ -147,10 +147,10 @@
   });
 
   const buttons = [
-    toggleVisibilityButton,
+    toggleHideDoneButton,
     toggleShowDoneButton,
-    selectDone,
-    markDone,
+    selectDoneButton,
+    clearDoneButton,
   ];
 
   const overlay = createOverlay(buttons)
@@ -174,7 +174,7 @@
       }
     });
 
-    updateButtonState(toggleVisibilityButton, isHidden);
+    updateButtonState(toggleHideDoneButton, isHidden);
     updateButtonState(toggleShowDoneButton, showDoneOnly);
   }
 

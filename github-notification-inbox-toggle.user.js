@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Notification Inbox Toggle
 // @namespace    http://tampermonkey.net/
-// @version      1.18
+// @version      1.19
 // @description  Toggle hiding or showing done notifications in GitHub inbox
 // @match        https://github.com/notifications*
 // @grant        none
@@ -25,7 +25,26 @@
         'svg.octicon-check',
     ];
 
-    const createButton = (text, positionY) => {
+    const getNotificationItems = () => {
+        return document.querySelectorAll('.js-navigation-container li.notifications-list-item');
+    };
+
+    const itemIsDone = (item) => {
+        return item.querySelector(':not(.notification-list-item)').querySelector(doneSelectors);
+    };
+
+    const itemIsVisible = (item) => {
+        return getComputedStyle(item).display !== 'none';
+    };
+
+    const checkItemCheckBox = (item) => {
+        const checkBox = item.querySelector('input[type="checkbox"]');
+        if (!checkBox.checked) {
+            checkBox.click();
+        }
+    };
+
+    const createButton = (text, positionY, handler) => {
         const button = document.createElement('button');
         button.textContent = text;
         button.style.position = 'fixed';
@@ -42,23 +61,37 @@
         button.style.color = '#333';
         button.addEventListener('click', (event) => {
             event.preventDefault();
-            if (text === 'Toggle Hidden Notifications') {
-                isHidden = !isHidden;
-                showDoneOnly = false;
-            } else if (text === 'Show Only Done Notifications') {
-                showDoneOnly = !showDoneOnly;
-                isHidden = false;
+            if (handler) {
+                handler(event);
             }
-            saveFilterState();
-            updateVisibleNotifications();
         });
         return button;
     };
 
-    const toggleVisibilityButton = createButton('Toggle Hidden Notifications', 10);
-    const toggleShowDoneButton = createButton('Show Only Done Notifications', 50);
+    const toggleVisibilityButton = createButton('Toggle Hidden Notifications', 10, (event) => {
+        isHidden = !isHidden;
+        showDoneOnly = false;
+        saveFilterState();
+        updateVisibleNotifications();
+    });
+    const toggleShowDoneButton = createButton('Show Only Done Notifications', 50, (event) => {
+        showDoneOnly = !showDoneOnly;
+        isHidden = false;
+        saveFilterState();
+        updateVisibleNotifications();
+    });
+    const selectDone = createButton('Select Done Notifications', 90, (event) => {
+        const items = getNotificationItems();
+        items.forEach(item => {
+            const isDone = itemIsDone(item);
+            if (isDone) {
+                checkItemCheckBox(item);
+            }
+        })
+    });
     document.body.appendChild(toggleVisibilityButton);
     document.body.appendChild(toggleShowDoneButton);
+    document.body.appendChild(selectDone);
 
     function updateButtonState(button, isActive) {
         button.style.backgroundColor = isActive ? '#4caf50' : 'rgba(255, 255, 255, 0.9)';
@@ -66,10 +99,10 @@
     }
 
     function updateVisibleNotifications() {
-        const items = document.querySelectorAll('.js-navigation-container li.notifications-list-item');
+        const items = getNotificationItems()
         items.forEach(item => {
-            const isVisible = getComputedStyle(item).display !== 'none';
-            const isDone = item.querySelector(':not(.notification-list-item)').querySelector(doneSelectors);
+            const isVisible = itemIsVisible(item);
+            const isDone = itemIsDone(item);
             const shouldShow = showDoneOnly ? isDone : !isHidden || !isDone;
             if (isVisible && !shouldShow) {
                 item.style.display = 'none'; // Hide if it shouldn't be displayed

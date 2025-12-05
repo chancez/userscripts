@@ -60,6 +60,7 @@
     // button.style.width = '120px'
     button.style.height = '50px'
     button.style.alignItems = 'center';
+    button.style.justifyContent = 'center';
     button.style.display = 'flex';
     button.style.flex = '1 1 80px';
     button.style.padding = '5px 5px';

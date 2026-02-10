@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Notification Inbox Toggle
 // @namespace    http://tampermonkey.net/
-// @version      1.20
+// @version      1.21
 // @description  Toggle hiding or showing done notifications in GitHub inbox
 // @match        https://github.com/notifications*
 // @grant        none
@@ -27,6 +27,10 @@
 
   const getNotificationItems = () => {
     return document.querySelectorAll('.js-navigation-container li.notifications-list-item');
+  };
+
+  const getNextButton = () => {
+    return document.querySelector('.js-notifications-container .paginate-container a[aria-label="Next"]');
   };
 
   const itemIsDone = (item) => {
@@ -146,11 +150,72 @@
     clickDoneButton();
   });
 
+  const resetMultiPageClearing = () => {
+    sessionStorage.setItem('isMultiPageClearing', 'false');
+    console.log('Multi-page clearing cancelled');
+    updateButtonState(clearDoneMultiPageButton, false);
+  }
+
+  const clearCurrentPageAndContinue = () => {
+    console.log('Clearing current page');
+    checkDoneItems()
+    clickDoneButton();
+
+    console.log('Going to next page');
+    const nextButton = getNextButton();
+    if (!nextButton) {
+      console.log('No more pages to clear');
+      return true
+    }
+    nextButton.click();
+  };
+
+  const isMultiPageClearing = () => {
+    return sessionStorage.getItem('isMultiPageClearing') === 'true';
+  }
+
+  const startMultiPageClearing = () => {
+    if (!isMultiPageClearing()) {
+      // May occur if user toggles multi-page clearing off and on quickly, or
+      // if there is an error during clearing that resets the state but the
+      // user tries to start again without realizing it
+      console.warn('Attempted to start multi-page clearing, but it is not marked as in progress, stopping early.');
+      return
+    }
+
+    updateButtonState(clearDoneMultiPageButton, true);
+
+    try {
+      const done = clearCurrentPageAndContinue();
+      if (done) {
+        resetMultiPageClearing();
+        console.log('Multi-page clearing completed');
+      }
+    } catch (error) {
+      console.error('Error during multi-page clearing:', error);
+      resetMultiPageClearing();
+    }
+  };
+
+  const clearDoneMultiPageButton = createButton('Clear Done (Multi-page)', () => {
+    // Toggle multi-page clearing on/off while it is in progress to allow user
+    // to cancel if they change their mind or if something goes wrong
+    if (isMultiPageClearing()) {
+      resetMultiPageClearing();
+      return;
+    }
+
+    // Track multi-page clearing state in sessionStorage to persist across page navigations
+    sessionStorage.setItem('isMultiPageClearing', 'true');
+    startMultiPageClearing();
+  });
+
   const buttons = [
     toggleHideDoneButton,
     toggleShowDoneButton,
     selectDoneButton,
     clearDoneButton,
+    clearDoneMultiPageButton,
   ];
 
   const overlay = createOverlay(buttons)
@@ -185,6 +250,21 @@
 
   // Initial call to update visibility
   updateVisibleNotifications();
+
+  // Resume multi-page clearing if it was in progress
+  if (isMultiPageClearing()) {
+    console.log('Resuming multi-page clearing after page load');
+    updateButtonState(clearDoneMultiPageButton, true);
+
+    // Wait for page to be fully loaded before continuing
+    if (document.readyState === 'complete') {
+      startMultiPageClearing();
+    } else {
+      window.addEventListener('load', () => {
+        startMultiPageClearing();
+      });
+    }
+  }
 
   // Observe for changes in the notification list
   const observer = new MutationObserver(() => {

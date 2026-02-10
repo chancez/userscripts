@@ -126,24 +126,23 @@
     updateVisibleNotifications();
   });
 
-  const selectDoneButton = createButton('Mark Done', () => {
+  const checkDoneItems = () => {
+    let hasDoneItems = false;
     const items = getNotificationItems();
     items.forEach(item => {
       const isDone = itemIsDone(item);
       if (isDone) {
         toggleItemCheckBox(item);
+        hasDoneItems = true;
       }
     })
-  });
+    return hasDoneItems;
+  };
+
+  const selectDoneButton = createButton('Mark Done', checkDoneItems)
 
   const clearDoneButton = createButton('Clear Done', () => {
-    const items = getNotificationItems();
-    items.forEach(item => {
-      const isDone = itemIsDone(item);
-      if (isDone) {
-        checkItemCheckBox(item);
-      }
-    })
+    checkDoneItems()
     clickDoneButton();
   });
 

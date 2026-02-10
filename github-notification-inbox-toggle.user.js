@@ -95,7 +95,7 @@
     overlay.style.top = '10px';
     overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
     overlay.style.width = '400px';
-    overlay.style.height = '80px';
+    // Don't set height, let the content determine it and allow for wrapping
     overlay.style.display = 'flex';
     overlay.style.justifyContent = 'center';
     overlay.style.alignItems = 'center';
